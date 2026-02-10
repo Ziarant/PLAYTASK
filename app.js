@@ -191,7 +191,6 @@ async function examineTask(task) {
         if(data.length > 0) {
             // 计算总和次数
             const totalTimes = data.reduce((sum, item) => sum + item.times, 0)
-            console.log(`${task.task_name} 今日完成总次数为${totalTimes}`)
             if(totalTimes >= task.frequency_max) status = 'completed'
         }
     }
@@ -211,8 +210,6 @@ async function handleCheckIn(event) {
     const times = parseInt(document.querySelector(`[data-task-times="${taskId}"]`).value) || 1
     const date = document.querySelector(`[data-task-date="${taskId}"]`).value
     const task = tasks.find(t => t.id == taskId);
-
-    console.log(date)
     
     if (!task) return;
     
@@ -314,7 +311,7 @@ function renderRecords(records) {
         const completedDate = record.checkin_date.split('T')[0]
 
         const textColor = record.earned_points > 0 ? 'text-cyan-400' : 'text-red-400';
-        const is_positive = record.earned_points > 0 ? '+' : '-';
+        const is_positive = record.earned_points > 0 ? '+' : '';
         
         row.innerHTML = `
             <td>${record.tasks?.task_name || '未知任务'}</td>
