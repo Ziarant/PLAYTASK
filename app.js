@@ -109,7 +109,7 @@ function renderTasks() {
                 <input type="number" class="task-times-input" min="-10000" max="10000" value="1" data-task-times="${task.id}">
                 <input type="date" class="task-date-input" data-task-date="${task.id}" value="${todayFormatted}">
                 <button class="checkin-btn" data-task-id="${task.id}">
-                    <i class="fas fa-check-circle"></i>打卡
+                    <i class="fas fa-check-circle"></i> 打卡
                 </button>
             </div>
         `;
@@ -402,7 +402,7 @@ async function calculateUserStats() {
     for(let i=14; i >=0; i--) {
         const date = new Date()
         date.setDate(date.getDate() - i)
-        const dateStr = date.toISOString().split('T')[0]
+        const dateStr = date.toLocaleDateString().split('T')[0]
         last15Days.push({
             date: dateStr,
             points: getDatabyDate(dateStr)
