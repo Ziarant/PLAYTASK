@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLAYTASK</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-tasks"></i>PLAYTASK</h1>
+            <div class="user-section">
+                <input type="text" id="userIdInput" placeholder="Ziarant" value="Ziarant"/>
+                <button id="loadUserData">更新我的数据</button>
+                <div class="user-info">
+                    <span>当前用户: <strong id="currentUser">未登录</strong></span>
+                    <div class="score-display">
+                        <span>总积分: <strong id="totalPoints">0</strong></span>
+                        <span>本日积分: <strong id="weekPoints">0</strong></span>
+                        <span>本周积分: <strong id="weekPoints">0</strong></span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <section class="tasks-section">
+                <h2><i class="fas fa-list-check"></i> 今日任务</h2>
+                <div id="tasksContainer" class="tasks-grid">
+                    <!-- 任务卡片将由JavaScript动态生成 -->
+                </div>
+            </section>
+
+            <div class="content-row">
+                <section class="records-section">
+                    <h2><i class="fas fa-history"></i> 我的记录</h2>
+                    <div class="table-container">
+                        <table id="recordsTable">
+                            <thead>
+                                <tr>
+                                    <th>任务</th>
+                                    <th>记录时间</th>
+                                    <th>获得积分</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 记录将由JavaScript动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="quick-stats">
+                    <h2><i class="fas fa-chart-line"></i> 快速统计</h2>
+                    <div class="stats-card">
+                        <p>今日已完成: <strong id="todayCompleted">0</strong> 个任务</p>
+                        <p>连续记录: <strong id="streakDays">0</strong> 天</p>
+                        <p>历史总计: <strong id="totalRecords">0</strong> 次记录</p>
+                    </div>
+                    <div class="actions">
+                        <button id="refreshData"><i class="fas fa-sync-alt"></i> 刷新数据</button>
+                        <button id="testConnection"><i class="fas fa-plug"></i> 测试数据库连接</button>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <footer>
+            <p>基于 Supabase 构建 | 数据实时同步</p>
+        </footer>
+    </div>
+
+    <!-- 加载Supabase客户端库和本地JS文件 -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

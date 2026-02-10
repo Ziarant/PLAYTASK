@@ -1,0 +1,286 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+    color: #333;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+/* 头部样式 */
+header {
+    background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+    color: white;
+    padding: 25px 35px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+header h1 {
+    font-size: 2.2rem;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+}
+
+#userIdInput {
+    padding: 12px 18px;
+    border: none;
+    border-radius: 50px;
+    width: 280px;
+    font-size: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#loadUserData, #refreshData, #testConnection {
+    background-color: #6c8dfa;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#loadUserData:hover, #refreshData:hover, #testConnection:hover {
+    background-color: #5a7df0;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(108, 141, 250, 0.3);
+}
+
+.user-info {
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.score-display {
+    display: flex;
+    gap: 25px;
+    font-size: 1.1rem;
+}
+
+/* 主内容区 */
+main {
+    padding: 30px;
+}
+
+h2 {
+    font-size: 1.6rem;
+    margin-bottom: 20px;
+    color: #2d3748;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tasks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 22px;
+    margin-bottom: 40px;
+}
+
+.task-card {
+    background: white;
+    border-radius: 12px;
+    padding: 22px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.07);
+    border-left: 5px solid #4b6cb7;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.task-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.12);
+}
+
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.task-difficulty {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.difficulty-easy { background-color: #e6f7e9; color: #0a7b3e; }
+.difficulty-medium { background-color: #fff4e6; color: #cc7a00; }
+.difficulty-hard { background-color: #ffe6e6; color: #c53030; }
+
+.task-points {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #4b6cb7;
+}
+
+.task-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.checkin-btn {
+    background-color: #10b981;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.checkin-btn:hover:not(:disabled) {
+    background-color: #0da271;
+}
+
+.checkin-btn:disabled {
+    background-color: #cbd5e0;
+    cursor: not-allowed;
+}
+
+.checkin-count {
+    font-size: 0.9rem;
+    color: #718096;
+}
+
+/* 内容行布局 */
+.content-row {
+    display: flex;
+    gap: 30px;
+}
+
+.records-section {
+    flex: 2;
+}
+
+.quick-stats {
+    flex: 1;
+}
+
+.table-container {
+    overflow-x: auto;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+}
+
+thead {
+    background-color: #f8fafc;
+}
+
+th {
+    padding: 16px 20px;
+    text-align: left;
+    font-weight: 600;
+    color: #4a5568;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+td {
+    padding: 16px 20px;
+    border-bottom: 1px solid #edf2f7;
+}
+
+tr:hover {
+    background-color: #f7fafc;
+}
+
+.stats-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.stats-card p {
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+footer {
+    text-align: center;
+    padding: 22px;
+    background-color: #f8fafc;
+    color: #718096;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 30px;
+}
+
+/* 响应式设计 */
+@media (max-width: 992px) {
+    .content-row {
+        flex-direction: column;
+    }
+    
+    .user-section {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .user-info {
+        margin-left: 0;
+        margin-top: 15px;
+    }
+}
+
+@media (max-width: 576px) {
+    header, main {
+        padding: 20px;
+    }
+    
+    .tasks-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    #userIdInput {
+        width: 100%;
+    }
+}
