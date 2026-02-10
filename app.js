@@ -1,5 +1,4 @@
 // 全局状态
-let currentUserId = null;
 let tasks = [];
 
 // DOM元素
@@ -7,11 +6,11 @@ const userIdInput = document.getElementById('userIdInput');
 const loadUserDataBtn = document.getElementById('loadUserData');
 const currentUserSpan = document.getElementById('currentUser');
 const totalPointsSpan = document.getElementById('totalPoints');
+const todayPointsSpan = document.getElementById('todayPoints')
 const weekPointsSpan = document.getElementById('weekPoints');
 const tasksContainer = document.getElementById('tasksContainer');
 const recordsTableBody = document.querySelector('#recordsTable tbody');
 const todayCompletedSpan = document.getElementById('todayCompleted');
-const streakDaysSpan = document.getElementById('streakDays');
 const totalRecordsSpan = document.getElementById('totalRecords');
 const refreshDataBtn = document.getElementById('refreshData');
 const testConnectionBtn = document.getElementById('testConnection');
@@ -23,25 +22,11 @@ testConnectionBtn.addEventListener('click', testDatabaseConnection);
 
 // 页面加载时尝试从本地存储获取用户ID
 window.addEventListener('DOMContentLoaded', () => {
-    const savedUserId = localStorage.getItem('savedUserId');
-    if (savedUserId) {
-        userIdInput.value = savedUserId;
-        loadUserData();
-    }
+    loadUserData();
 });
 
 // 加载用户数据
 async function loadUserData() {
-    const userId = userIdInput.value.trim();
-    
-    if (!userId) {
-        alert('请输入用户ID');
-        return;
-    }
-    
-    currentUserId = userId;
-    localStorage.setItem('savedUserId', userId);
-    currentUserSpan.textContent = userId;
     
     // 更新UI
     loadUserDataBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 加载中...';
@@ -73,10 +58,9 @@ async function loadUserData() {
 async function loadTasks() {
     try {
         // 假设你的任务表名为 'tasks'
-        const { data, error } = await supabase
+        const { data, error } = await mySupabase
             .from('tasks')
             .select('*')
-            .eq('is_active', true)  // 假设有 is_active 字段来筛选活跃任务
             .order('created_at', { ascending: true });
         
         if (error) throw error;
@@ -99,29 +83,47 @@ function renderTasks() {
     tasksContainer.innerHTML = '';
     
     tasks.forEach(task => {
-        const taskCard = document.createElement('div');
-        taskCard.className = 'task-card';
+        const taskList = document.createElement('div');
+        taskList.className = 'task-list';
         
-        // 根据难度设置样式
-        const difficultyClass = `difficulty-${task.difficulty || 'medium'}`;
-        const difficultyText = { easy: '简单', medium: '中等', hard: '困难' }[task.difficulty] || '中等';
-        
-        taskCard.innerHTML = `
+        const tags = task.tags.split(',')
+        let tagSpans = ''
+        tags.forEach(tag => {
+            tagSpans += `<span class="task-tag">${tag}</span>`
+        })        
+
+        // TODO:积分消费逻辑中，需要改变task-points的样式
+        taskList.innerHTML = `
             <div class="task-header">
-                <h3>${task.task_name}</h3>
-                <span class="task-difficulty ${difficultyClass}">${difficultyText}</span>
+                <h3 title="${task.description || '暂无描述'}">${task.task_name}</h3>
+                ${tagSpans}
             </div>
-            <p class="task-description">${task.description || '暂无描述'}</p>
-            <div class="task-points">+${task.base_points || 0} 积分</div>
+            <div class="task-points">+${task.base_points || 0}</div>
+            <span class="checkin-count">今日完成: <span id="count-${task.id}">0</span> 次</span>
             <div class="task-actions">
+                <span class="task-frequency">${task.frequency_type} ${task.frequency || 1}次</span>
+                <input type="number" class="task-times-input" min="0" max="10000" value="1" data-task-times="${task.id}">
+                <input type="date" class="task-calendar" data-task-date="${task.id}">
                 <button class="checkin-btn" data-task-id="${task.id}">
                     <i class="fas fa-check-circle"></i> 立即打卡
                 </button>
-                <span class="checkin-count">今日完成: <span id="count-${task.id}">0</span> 次</span>
             </div>
         `;
+
+        // 判断逻辑：该task是否需要执行或展示
+        const status =  examineTask(task)
+            .then(status => {
+                if(status === 'completed'){
+                    // 已完成的展示为
+                    taskList.style.borderLeft = '#353535'
+                    taskList.style.opacity = '0.6';
+                    taskList.style.pointerEvents = 'none';
+                    taskList.querySelector('.checkin-btn').disabled = true;
+                } 
+            })
         
-        tasksContainer.appendChild(taskCard);
+
+        tasksContainer.appendChild(taskList);
     });
     
     // 为所有打卡按钮添加事件监听器
@@ -133,27 +135,72 @@ function renderTasks() {
     updateTodayCheckinCounts();
 }
 
+// TODO:处理任务状态：
+async function examineTask(task) {
+    let status = 'active'
+
+    // frequency设置为-1时，表示无限制：
+    if(task.frequency === -1) return status
+   
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0); // 设置为本地时间“今天的00:00:00”
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1); // 设置为本地时间“明天的00:00:00”
+    
+    const frequencyType = task.frequency_type
+    // 1. 任务是否需要每日重复
+    if(frequencyType === '每日'){
+        // 每日重复, 则检查本日的完成总次数
+        const { data, error } = await mySupabase
+            .from('records')
+            .select('times')
+            .gte('checkin_date', todayStart.toISOString()) // 大于等于今天开始
+            .lt('checkin_date', todayEnd.toISOString())
+ 
+        if(data.length > 0) {
+            // 计算总和次数
+            const totalTimes = data.reduce((sum, item) => sum + item.times, 0)
+            console.log(`${task.task_name}今日完成总次数为${totalTimes}`)
+            if(totalTimes >= task.frequency) status = 'completed'
+        }
+    }
+    // 2. 任务是否需要每周重复
+    // 3. 任务是否需要每月重复
+    // 4. 任务是否需要每年重复
+    // 5. 任务是否需要特定日期重复
+    // 6. 任务是否需要特定时间段重复
+    // 7. 任务是否需要特定星期几重复
+    return status  // 或 'completed', 'inactive'
+}
+
 // 处理打卡
 async function handleCheckIn(event) {
     const taskId = event.currentTarget.getAttribute('data-task-id');
+    // 根据taskId锁定卡片中的次数信息：
+    const times = parseInt(document.querySelector(`[data-task-times="${taskId}"]`).value) || 1
+    const date = document.querySelector(`[data-task-date="${taskId}"]`).value
     const task = tasks.find(t => t.id == taskId);
+
+    console.log(date)
     
-    if (!task || !currentUserId) return;
+    if (!task) return;
     
     const btn = event.currentTarget;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 打卡中...';
     btn.disabled = true;
-    
+
+    // 计算获取积分：task.base_points * timestimes
+    const earnedPoints = calculatePoints(task, times)
+
     try {
-        // 假设你的打卡记录表名为 'checkin_records'
-        const { data, error } = await supabase
-            .from('checkin_records')
+        const { data, error } = await mySupabase
+            .from('records')        // 表名为 'records'
             .insert([
                 {
-                    user_id: currentUserId,
                     task_id: taskId,
-                    earned_points: task.base_points || 10,
-                    checkin_date: new Date().toISOString().split('T')[0] // 今天日期
+                    times: times,
+                    earned_points: earnedPoints || 1,
+                    checkin_date: date || new Date().toISOString().split('T')[0] // 默认今天日期
                 }
             ]);
         
@@ -181,22 +228,28 @@ async function handleCheckIn(event) {
     }
 }
 
+// 计算获取积分：
+function calculatePoints(task, times) {
+    // 将文本转化为数字进行计算：
+    // 可以增加更多计算方法：
+    if(isNaN(task.base_points)) return 1
+    return parseFloat(task.base_points) * parseFloat(times)
+}
+
 // 加载用户打卡记录
 async function loadUserRecords() {
-    if (!currentUserId) return;
     
     try {
-        // 假设你的打卡记录表名为 'checkin_records'
+        // 打卡记录表名为 'records'
         // 并且与任务表通过 task_id 关联
-        const { data, error } = await supabase
-            .from('checkin_records')
+        const { data, error } = await mySupabase
+            .from('records')
             .select(`
                 *,
                 tasks:task_id (task_name)
             `)
-            .eq('user_id', currentUserId)
             .order('created_at', { ascending: false })
-            .limit(50);  // 最多显示50条记录
+            .limit(500);  // 最多显示500条记录
         
         if (error) throw error;
         
@@ -225,10 +278,15 @@ function renderRecords(records) {
             hour: '2-digit', 
             minute: '2-digit' 
         });
+
+        // 格式化完成日期，只保留年月日：yyyy-mm-dd
+        const completedDate = record.checkin_date.split('T')[0]
         
         row.innerHTML = `
             <td>${record.tasks?.task_name || '未知任务'}</td>
             <td>${formattedDate}</td>
+            <td>${record.times || 1}</td>
+            <td>${completedDate || 'N/A'}</td>
             <td>+${record.earned_points || 0} 积分</td>
         `;
         
@@ -238,16 +296,30 @@ function renderRecords(records) {
     totalRecordsSpan.textContent = records.length;
 }
 
+// 获取特定日期的积分
+async function getDatabyDate(date) {
+    // date: str, 'yyyy-mm-dd'
+    const selectDateStart = new Date(date)
+    selectDateStart.setHours(0, 0, 0, 0)
+    const selectDateEnd = new Date(date)
+    selectDateEnd.setHours(23, 59, 59, 99)
+    const { data, error } = await mySupabase
+        .from('records')
+        .select('earned_points')
+        .gte('checkin_date', selectDateStart.toISOString())
+        .lt('checkin_date', selectDateEnd.toISOString())
+    const Points = data.reduce((sum, record) => sum + (record.earned_points || 0), 0);
+    if (error) throw error;
+    return Points
+}
+
 // 计算用户统计信息
 async function calculateUserStats() {
-    if (!currentUserId) return;
-    
     try {
         // 计算总积分
-        const { data: totalData, error: totalError } = await supabase
-            .from('checkin_records')
+        const { data: totalData, error: totalError } = await mySupabase
+            .from('records')
             .select('earned_points')
-            .eq('user_id', currentUserId);
         
         if (totalError) throw totalError;
         
@@ -257,52 +329,101 @@ async function calculateUserStats() {
         // 计算本周积分
         const now = new Date();
         const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay()); // 周日开始
+        startOfWeek.setDate(now.getDate() - now.getDay() + 1); // 周一开始
         startOfWeek.setHours(0, 0, 0, 0);
         
-        const { data: weekData, error: weekError } = await supabase
-            .from('checkin_records')
+        const { data: weekData, error: weekError } = await mySupabase
+            .from('records')
             .select('earned_points')
-            .eq('user_id', currentUserId)
-            .gte('created_at', startOfWeek.toISOString());
+            .gte('checkin_date', startOfWeek.toISOString());
         
         if (weekError) throw weekError;
         
         const weekPoints = weekData.reduce((sum, record) => sum + (record.earned_points || 0), 0);
         weekPointsSpan.textContent = weekPoints;
         
-        // 计算今日已完成任务数
-        const today = new Date().toISOString().split('T')[0];
-        const { data: todayData, error: todayError } = await supabase
-            .from('checkin_records')
-            .select('task_id')
-            .eq('user_id', currentUserId)
-            .eq('checkin_date', today);
+        // 计算今日已完成任务数,日期格式为'yyyy-mm-dd 00:00:00+00',如‘2026-02-10 00:00:00+00’
+        const todayStart = new Date(now)
+        todayStart.setHours(0, 0, 0, 0); // 设置为本地时间“今天的00:00:00”
+        const todayEnd = new Date(todayStart);
+        todayEnd.setDate(todayEnd.getDate() + 1); // 设置为本地时间“明天的00:00:00”
+
+        const { data: todayData, error: todayError } = await mySupabase
+            .from('records')
+            .select('earned_points')
+            .gte('checkin_date', todayStart.toISOString()) // 大于等于今天开始
+            .lt('checkin_date', todayEnd.toISOString())
+
+        const todayPoints = todayData.reduce((sum, record) => sum + (record.earned_points || 0), 0);
+        todayPointsSpan.textContent = todayPoints;
         
         if (todayError) throw todayError;
         
         todayCompletedSpan.textContent = todayData?.length || 0;
         
-        // 这里可以添加计算连续打卡天数的逻辑
-        // 简化版：假设连续打卡天数
-        streakDaysSpan.textContent = calculateStreakDays(totalData || []);
-        
     } catch (error) {
         console.error('计算统计信息失败:', error);
     }
+
+    // 统计过去15日的积分信息：
+    let last15Days = []
+    for(let i=14; i >=0; i--) {
+        const date = new Date()
+        date.setDate(date.getDate() - i)
+        const dateStr = date.toISOString().split('T')[0]
+        last15Days.push({
+            date: dateStr,
+            points: getDatabyDate(dateStr)
+        })
+    }
+    // 等待数据加载完成
+    Promise.all(last15Days.map(day => day.points)).then(resolvedPoints => {
+        last15Days = last15Days.map((day, index) => ({
+            ...day,
+            points: resolvedPoints[index]
+        }))
+        // 将15日积分情况绘制在画布上：
+        const chartCtx = document.getElementById('pointsChart').getContext('2d');
+        new Chart(chartCtx, {
+            type: 'line',
+            data: {
+                labels: last15Days.map(day => day.date),
+                datasets: [{
+                    label: '积分',
+                    data: last15Days.map(day => day.points),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    })
 }
 
 // 更新今日打卡次数显示
 async function updateTodayCheckinCounts() {
-    if (!currentUserId || tasks.length === 0) return;
     
     const today = new Date().toISOString().split('T')[0];
     
     try {
-        const { data, error } = await supabase
-            .from('checkin_records')
+        const { data, error } = await mySupabase
+            .from('records')
             .select('task_id')
-            .eq('user_id', currentUserId)
             .eq('checkin_date', today);
         
         if (error) throw error;
@@ -328,11 +449,6 @@ async function updateTodayCheckinCounts() {
 
 // 刷新所有数据
 async function refreshAllData() {
-    if (!currentUserId) {
-        alert('请先输入用户ID并加载数据');
-        return;
-    }
-    
     refreshDataBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 刷新中...';
     
     try {
@@ -359,14 +475,12 @@ async function refreshAllData() {
 // 测试数据库连接
 async function testDatabaseConnection() {
     testConnectionBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 测试中...';
-    
     try {
         // 尝试从任务表获取一条数据来测试连接
-        const { data, error } = await supabase
+        const { data, error } = await mySupabase
             .from('tasks')
             .select('id')
             .limit(1);
-        
         if (error) throw error;
         
         testConnectionBtn.innerHTML = '<i class="fas fa-check"></i> 连接成功';
@@ -387,36 +501,4 @@ async function testDatabaseConnection() {
             testConnectionBtn.style.backgroundColor = '';
         }, 3000);
     }
-}
-
-// 计算连续打卡天数 (简化版本)
-function calculateStreakDays(records) {
-    if (!records || records.length === 0) return 0;
-    
-    // 获取所有打卡日期
-    const dates = [...new Set(records.map(r => {
-        const date = new Date(r.created_at);
-        return date.toISOString().split('T')[0];
-    }))].sort().reverse();
-    
-    if (dates.length === 0) return 0;
-    
-    // 检查今天是否打卡
-    const today = new Date().toISOString().split('T')[0];
-    let streak = dates[0] === today ? 1 : 0;
-    
-    // 检查连续天数
-    for (let i = 1; i < dates.length; i++) {
-        const current = new Date(dates[i-1]);
-        const previous = new Date(dates[i]);
-        const diffDays = Math.floor((current - previous) / (1000 * 60 * 60 * 24));
-        
-        if (diffDays === 1) {
-            streak++;
-        } else {
-            break;
-        }
-    }
-    
-    return streak;
 }

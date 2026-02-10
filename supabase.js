@@ -3,10 +3,11 @@
 const SUPABASE_URL = 'https://bjvqcixvyiusoceduxli.supabase.co';  // 替换为你的 Project URL
 const SUPABASE_ANON_KEY = 'sb_publishable_HUUUFWz_KZH3lccVpZTPRA_hGGS5fiK';  // 替换为你的 anon/public key
 
+
 // 初始化Supabase客户端
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const mySupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 console.log('Supabase客户端已初始化');
 
 // 为了方便调试，将supabase客户端暴露到全局
-window.supabaseClient = supabase;
+window.supabaseClient = mySupabase;
