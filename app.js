@@ -9,6 +9,7 @@ const totalPointsSpan = document.getElementById('totalPoints');
 const todayPointsSpan = document.getElementById('todayPoints')
 const weekPointsSpan = document.getElementById('weekPoints');
 const tasksContainer = document.getElementById('tasksContainer');
+const tasksCompletedContainer = document.getElementById('tasksCompletedContainer');
 const recordsTableBody = document.querySelector('#recordsTable tbody');
 const todayCompletedSpan = document.getElementById('todayCompleted');
 const totalRecordsSpan = document.getElementById('totalRecords');
@@ -42,14 +43,14 @@ async function loadUserData() {
         
         loadUserDataBtn.innerHTML = '<i class="fas fa-check"></i> 数据已加载';
         setTimeout(() => {
-            loadUserDataBtn.innerHTML = '<i class="fas fa-user"></i> 加载我的数据';
+            loadUserDataBtn.innerHTML = '<i class="fas fa-user"></i> 加载数据';
             loadUserDataBtn.disabled = false;
         }, 1500);
         
     } catch (error) {
         console.error('加载数据失败:', error);
         alert('加载数据失败，请检查控制台错误信息');
-        loadUserDataBtn.innerHTML = '<i class="fas fa-user"></i> 加载我的数据';
+        loadUserDataBtn.innerHTML = '<i class="fas fa-user"></i> 加载数据';
         loadUserDataBtn.disabled = false;
     }
 }
@@ -81,49 +82,55 @@ function renderTasks() {
     }
     
     tasksContainer.innerHTML = '';
-    
     tasks.forEach(task => {
-        const taskList = document.createElement('div');
-        taskList.className = 'task-list';
-        
-        const tags = task.tags.split(',')
-        let tagSpans = ''
-        tags.forEach(tag => {
-            tagSpans += `<span class="task-tag">${tag}</span>`
-        })        
+        const taskCard = document.createElement('div');
+        taskCard.className = 'task-list';   
 
         // TODO:积分消费逻辑中，需要改变task-points的样式
-        taskList.innerHTML = `
+        taskCard.innerHTML = `
             <div class="task-header">
                 <h3 title="${task.description || '暂无描述'}">${task.task_name}</h3>
-                ${tagSpans}
+                <span class="task-tag">${task.frequency_type} | ${task.tags}</span>
             </div>
             <div class="task-points">+${task.base_points || 0}</div>
-            <span class="checkin-count">今日完成: <span id="count-${task.id}">0</span> 次</span>
+            <span class="task-frequency">
+                <span class="frequency_text">今日</span>获取: <span id="count-${task.id}">0</span> | ${task.frequency_max || 1}
+            </span>
             <div class="task-actions">
-                <span class="task-frequency">${task.frequency_type} ${task.frequency || 1}次</span>
                 <input type="number" class="task-times-input" min="0" max="10000" value="1" data-task-times="${task.id}">
                 <input type="date" class="task-calendar" data-task-date="${task.id}">
                 <button class="checkin-btn" data-task-id="${task.id}">
-                    <i class="fas fa-check-circle"></i> 立即打卡
+                    <i class="fas fa-check-circle"></i>打卡
                 </button>
             </div>
         `;
+
+        if(task.tags === '生活') {
+            taskCard.querySelector('.task-tag').style.backgroundColor = '#10b981'
+        }
+
+        if(task.frequency_type === '每周'){
+            taskCard.querySelector('.frequency_text').textContent = '本周'
+        } else if (task.frequency_type === '每月') {
+            taskCard.querySelector('.frequency_text').textContent = '本月'
+        }
 
         // 判断逻辑：该task是否需要执行或展示
         const status =  examineTask(task)
             .then(status => {
                 if(status === 'completed'){
+                    taskCard.classList.add('task-completed')
                     // 已完成的展示为
-                    taskList.style.borderLeft = '#353535'
-                    taskList.style.opacity = '0.6';
-                    taskList.style.pointerEvents = 'none';
-                    taskList.querySelector('.checkin-btn').disabled = true;
+                    taskCard.style.borderLeft = '#353535'
+                    taskCard.style.opacity = '0.6';
+                    taskCard.style.pointerEvents = 'none';
+                    taskCard.querySelector('.checkin-btn').disabled = true;
+                    tasksCompletedContainer.appendChild(taskCard)
                 } 
+                else {
+                    tasksContainer.appendChild(taskCard)
+                }
             })
-        
-
-        tasksContainer.appendChild(taskList);
     });
     
     // 为所有打卡按钮添加事件监听器
@@ -140,7 +147,7 @@ async function examineTask(task) {
     let status = 'active'
 
     // frequency设置为-1时，表示无限制：
-    if(task.frequency === -1) return status
+    if(task.frequency_max === -1) return status
    
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0); // 设置为本地时间“今天的00:00:00”
@@ -154,14 +161,15 @@ async function examineTask(task) {
         const { data, error } = await mySupabase
             .from('records')
             .select('times')
+            .eq('task_id', task.id)
             .gte('checkin_date', todayStart.toISOString()) // 大于等于今天开始
             .lt('checkin_date', todayEnd.toISOString())
  
         if(data.length > 0) {
             // 计算总和次数
             const totalTimes = data.reduce((sum, item) => sum + item.times, 0)
-            console.log(`${task.task_name}今日完成总次数为${totalTimes}`)
-            if(totalTimes >= task.frequency) status = 'completed'
+            console.log(`${task.task_name} 今日完成总次数为${totalTimes}`)
+            if(totalTimes >= task.frequency_max) status = 'completed'
         }
     }
     // 2. 任务是否需要每周重复
@@ -365,6 +373,7 @@ async function calculateUserStats() {
         console.error('计算统计信息失败:', error);
     }
 
+    // TODO:根据标签分类
     // 统计过去15日的积分信息：
     let last15Days = []
     for(let i=14; i >=0; i--) {
@@ -416,6 +425,7 @@ async function calculateUserStats() {
 }
 
 // 更新今日打卡次数显示
+// TODO:更改为获取点数，并按照每日，每周，每月分类
 async function updateTodayCheckinCounts() {
     
     const today = new Date().toISOString().split('T')[0];
