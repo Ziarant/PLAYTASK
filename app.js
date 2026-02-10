@@ -9,6 +9,7 @@ const totalPointsSpan = document.getElementById('totalPoints');
 const todayPointsSpan = document.getElementById('todayPoints')
 const weekPointsSpan = document.getElementById('weekPoints');
 const tasksContainer = document.getElementById('tasksContainer');
+const consumptionContainer = document.getElementById('consumptionContainer')
 const tasksCompletedContainer = document.getElementById('tasksCompletedContainer');
 const recordsTableBody = document.querySelector('#recordsTable tbody');
 const todayCompletedSpan = document.getElementById('todayCompleted');
@@ -80,6 +81,12 @@ function renderTasks() {
         tasksContainer.innerHTML = '<p class="no-data">暂无任务，请先在Supabase后台创建任务</p>';
         return;
     }
+
+    const today = new Date()
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayFormatted = `${year}-${month}-${day}`;
     
     tasksContainer.innerHTML = '';
     tasks.forEach(task => {
@@ -92,13 +99,15 @@ function renderTasks() {
                 <h3 title="${task.description || '暂无描述'}">${task.task_name}</h3>
                 <span class="task-tag">${task.frequency_type} | ${task.tags}</span>
             </div>
-            <div class="task-points">+${task.base_points || 0}</div>
-            <span class="task-frequency">
-                <span class="frequency_text">今日</span>获取: <span id="count-${task.id}">0</span> | ${task.frequency_max || 1}
-            </span>
+            <div class="task-frequency flex justify-between">
+                <div class="task-points">${task.base_points || 0}</div>
+                <div>
+                    <span class="frequency_text">今日</span>获取: <span id="count-${task.id}">0</span> | ${task.frequency_max || 1}
+                </div>
+            </div>
             <div class="task-actions">
                 <input type="number" class="task-times-input" min="-10000" max="10000" value="1" data-task-times="${task.id}">
-                <input type="date" class="task-calendar" data-task-date="${task.id}">
+                <input type="date" class="task-date-input" data-task-date="${task.id}" value="${todayFormatted}">
                 <button class="checkin-btn" data-task-id="${task.id}">
                     <i class="fas fa-check-circle"></i>打卡
                 </button>
@@ -123,28 +132,34 @@ function renderTasks() {
             taskCard.querySelector('.frequency_text').textContent = '本月'
         }
 
+        taskCard.querySelector('.checkin-btn').addEventListener('click', handleCheckIn)
+
         // 判断逻辑：该task是否需要执行或展示
         const status =  examineTask(task)
             .then(status => {
                 if(status === 'completed'){
                     taskCard.classList.add('task-completed')
                     // 已完成的展示为
-                    taskCard.style.borderLeft = '#353535'
+                    taskCard.style.borderLeftColor = '#353535'
                     taskCard.style.opacity = '0.6';
                     taskCard.style.pointerEvents = 'none';
-                    taskCard.querySelector('.checkin-btn').disabled = true;
+                    // 为了补卡，不改变disabled
+                    // taskCard.querySelector('.checkin-btn').disabled = true;
                     tasksCompletedContainer.appendChild(taskCard)
-                } 
-                else {
+                } else if (task.is_consume){
+                    // 消费项目
+                    taskCard.style.borderLeftColor = '#d11a1aff'
+                    consumptionContainer.appendChild(taskCard)
+                } else {
                     tasksContainer.appendChild(taskCard)
                 }
             })
     });
     
     // 为所有打卡按钮添加事件监听器
-    document.querySelectorAll('.checkin-btn').forEach(btn => {
-        btn.addEventListener('click', handleCheckIn);
-    });
+    // document.querySelectorAll('.checkin-btn').forEach(btn => {
+    //     btn.addEventListener('click', handleCheckIn);
+    // });
     
     // 更新今日打卡次数
     updateTodayCheckinCounts();
@@ -237,7 +252,7 @@ async function handleCheckIn(event) {
         btn.style.backgroundColor = '#ef4444';
         
         setTimeout(() => {
-            btn.innerHTML = '<i class="fas fa-check-circle"></i> 立即打卡';
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> 打卡';
             btn.style.backgroundColor = '';
             btn.disabled = false;
         }, 2000);
@@ -297,13 +312,16 @@ function renderRecords(records) {
 
         // 格式化完成日期，只保留年月日：yyyy-mm-dd
         const completedDate = record.checkin_date.split('T')[0]
+
+        const textColor = record.earned_points > 0 ? 'text-cyan-400' : 'text-red-400';
+        const is_positive = record.earned_points > 0 ? '+' : '-';
         
         row.innerHTML = `
             <td>${record.tasks?.task_name || '未知任务'}</td>
             <td>${formattedDate}</td>
             <td>${record.times || 1}</td>
             <td>${completedDate || 'N/A'}</td>
-            <td>+${record.earned_points || 0} 积分</td>
+            <td class="${textColor}">${is_positive}${record.earned_points || 0}</td>
         `;
         
         recordsTableBody.appendChild(row);
@@ -340,7 +358,7 @@ async function calculateUserStats() {
         if (totalError) throw totalError;
         
         const totalPoints = totalData.reduce((sum, record) => sum + (record.earned_points || 0), 0);
-        totalPointsSpan.textContent = totalPoints;
+        totalPointsSpan.textContent = totalPoints.toFixed(2);
         
         // 计算本周积分
         const now = new Date();
@@ -356,7 +374,7 @@ async function calculateUserStats() {
         if (weekError) throw weekError;
         
         const weekPoints = weekData.reduce((sum, record) => sum + (record.earned_points || 0), 0);
-        weekPointsSpan.textContent = weekPoints;
+        weekPointsSpan.textContent = weekPoints.toFixed(2);
         
         // 计算今日已完成任务数,日期格式为'yyyy-mm-dd 00:00:00+00',如‘2026-02-10 00:00:00+00’
         const todayStart = new Date(now)
@@ -371,7 +389,7 @@ async function calculateUserStats() {
             .lt('checkin_date', todayEnd.toISOString())
 
         const todayPoints = todayData.reduce((sum, record) => sum + (record.earned_points || 0), 0);
-        todayPointsSpan.textContent = todayPoints;
+        todayPointsSpan.textContent = todayPoints.toFixed(2);
         
         if (todayError) throw todayError;
         
