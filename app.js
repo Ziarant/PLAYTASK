@@ -97,7 +97,7 @@ function renderTasks() {
                 <span class="frequency_text">今日</span>获取: <span id="count-${task.id}">0</span> | ${task.frequency_max || 1}
             </span>
             <div class="task-actions">
-                <input type="number" class="task-times-input" min="0" max="10000" value="1" data-task-times="${task.id}">
+                <input type="number" class="task-times-input" min="-10000" max="10000" value="1" data-task-times="${task.id}">
                 <input type="date" class="task-calendar" data-task-date="${task.id}">
                 <button class="checkin-btn" data-task-id="${task.id}">
                     <i class="fas fa-check-circle"></i>打卡
