@@ -107,6 +107,14 @@ function renderTasks() {
 
         if(task.tags === '生活') {
             taskCard.querySelector('.task-tag').style.backgroundColor = '#10b981'
+        } else if(task.tags === '提升') {
+            taskCard.querySelector('.task-tag').style.backgroundColor = '#3b82f6'
+        } else if(task.tags === '健康') {
+            taskCard.querySelector('.task-tag').style.backgroundColor = '#f59e0b'
+        } else if(task.tags === '娱乐') {
+            taskCard.querySelector('.task-tag').style.backgroundColor = '#8b5cf6'
+        } else {
+            taskCard.querySelector('.task-tag').style.backgroundColor = '#6b7280'
         }
 
         if(task.frequency_type === '每周'){
