@@ -1,5 +1,14 @@
 // 全局状态
 let tasks = [];
+const colorSet = {
+    '生活': '#10b981',
+    '工作': '#879a0b',
+    '提升': '#481830',
+    '健康': '#f59e0b',
+    '娱乐': '#8b5cf6',
+    '经济': '#4b6cb7',
+    '总和': '#252555'
+}
 
 // 全局变量存储图表实例
 let chartCtx = null;
@@ -328,8 +337,8 @@ async function loadUserRecords() {
                 *,
                 tasks:task_id (task_name)
             `)
-            .order('created_at', { ascending: false })
-            .limit(500);  // 最多显示500条记录
+            .order('created_at', { ascending: false });
+            
 
         if (error) throw error;
 
@@ -349,10 +358,16 @@ function renderRecords(records) {
 
     recordsTableBody.innerHTML = '';
 
-    // TODO:排序方式
+    // TODO:排序方式, 数量限制30条
+    let count = 0
+    // 只显示最近的30条记录
 
     records.forEach(record => {
         const row = document.createElement('tr');
+
+        if (count % 2 === 0) {
+            row.classList.add('bg-gray-100');
+        }
 
         // 格式化日期时间
         const date = new Date(record.created_at);
@@ -376,6 +391,7 @@ function renderRecords(records) {
             <td>${formattedDate}</td>
         `;
 
+        if (count++ >= 30) return;
         recordsTableBody.appendChild(row);
     });
 
@@ -391,11 +407,19 @@ async function getDatabyDate(date) {
     selectDateEnd.setHours(23, 59, 59, 99)
     const { data, error } = await mySupabase
         .from('records')
-        .select('earned_points')
+        .select('earned_points, task_id')
         .gte('checkin_date', selectDateStart.toISOString())
         .lt('checkin_date', selectDateEnd.toISOString())
-    const Points = data.reduce((sum, record) => sum + (record.earned_points || 0), 0);
+    // const Points = data.reduce((sum, record) => sum + (record.earned_points || 0), 0);
+    // 按照task分类tag归纳积分数据：
     if (error) throw error;
+    const Points = data.reduce((acc, record) => {
+        const task = tasks.find(t => t.id === record.task_id);
+        const tag = task ? task.tags : '未知';
+        acc[tag] = (acc[tag] || 0) + (record.earned_points || 0);
+        return acc;
+    }, {})
+    Points['总和'] = data.reduce((sum, record) => sum + (record.earned_points || 0), 0)
     return Points
 }
 
@@ -464,31 +488,41 @@ async function calculateUserStats() {
             points: resolvedPoints[index]
         }))
         // 将15日积分情况绘制在画布上：
-        // 在 calculateUserStats 中
-        // 在 calculateUserStats 中
         if (chartCtx) {
             chartCtx.destroy(); // 销毁旧图表
         }
+        // Points : {tag : earned_points}
         chartCtx = document.getElementById('pointsChart').getContext('2d');
-        new Chart(chartCtx, {
+        // 将points数据按照keys区分，绘制折线图：
+        const tagkeys = []
+        last15Days.forEach(day => {
+            Object.keys(day.points).forEach(tag => {
+                if (!tagkeys.includes(tag)) tagkeys.push(tag)
+            })
+        })
+        const chart = new Chart(chartCtx, {
             type: 'line',
             data: {
                 labels: last15Days.map(day => day.date),
-                datasets: [{
-                    label: '积分',
-                    data: last15Days.map(day => day.points),
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    tension: 0.3,
-                    fill: true
-                }]
+                datasets: tagkeys.map(tag => ({
+                    label: tag,
+                    data: last15Days.map(day => day.points[tag] || 0),
+                    borderColor: colorSet[tag] || '#000',
+                    backgroundColor: tag==='总和' ?  (colorSet[tag] || '#000') + '40' : '#25252510', // 添加透明度
+                    tension: 0.2,
+                    fill: tag==='总和' ? true : false
+                }))
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        display: false
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: '过去15日积分趋势'
                     }
                 },
                 scales: {
