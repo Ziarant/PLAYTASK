@@ -121,6 +121,9 @@ function renderTasks(date = new Date()) {
                     <span class="frequency_text">今日</span>获取: <span id="count-${task.id}">0</span> | ${task.frequency_max || 1}
                 </div>
             </div>
+            <div>
+                <input class="task-remark p-2 w-full border border-gray-400 rounded-lg" type="text" placeholder="记录当下的感受吧">
+            </div>
             <div class="task-actions">
                 <input type="number" class="task-times-input" min="-10000" max="10000" value="1" data-task-times="${task.id}">
                 <input type="date" class="task-date-input" data-task-date="${task.id}" value="${todayFormatted}">
@@ -299,21 +302,21 @@ async function calculatePoints(task, times, date) {
         .eq('task_id', task.id)
         .gte('checkin_date', yesterday.toISOString())
         .lt('checkin_date', today.toISOString())
-    
+
     if (data.length > 0 && data[0].earned_points > 0) buff *= 1.05
     // 昨日times总和：
     const yesterday_times = data.length > 0 ? data.reduce((sum, item) => sum + item.times, 0) : 0;
 
     // times 应当有限制：本日总已打卡数不超过task.frequency_max
-    const { data:todaydata, error:todayerror } = await mySupabase
+    const { data: todaydata, error: todayerror } = await mySupabase
         .from('records')
-        .select('times')  
+        .select('times')
         .eq('task_id', task.id)
         .gte('checkin_date', today.toISOString())
         .lt('checkin_date', todayEnd.toISOString())
     // const today_times = sum(todaydata.map(item => item.times))
     const today_times = todaydata.length > 0 ? todaydata.reduce((sum, item) => sum + item.times, 0) : 0;
-    if(task.frequency_max !== -1) {
+    if (task.frequency_max !== -1) {
         if (today_times + times > task.frequency_max) {
             thisTimes = task.frequency_max - today_times - times > 0 ? task.frequency_max - today_times - times : task.frequency_max - today_times;
         }
@@ -322,7 +325,7 @@ async function calculatePoints(task, times, date) {
     // 超越奖励：本日达到或超过昨日，系数增加0.02
     if (today_times + thisTimes >= yesterday_times) buff *= 1.02
 
-    return { points:parseFloat(task.base_points) * parseFloat(thisTimes) * buff , buff_value : buff}
+    return { points: parseFloat(task.base_points) * parseFloat(thisTimes) * buff, buff_value: buff }
 }
 
 // 加载用户打卡记录
@@ -338,7 +341,7 @@ async function loadUserRecords() {
                 tasks:task_id (task_name)
             `)
             .order('created_at', { ascending: false });
-            
+
 
         if (error) throw error;
 
@@ -390,6 +393,7 @@ function renderRecords(records) {
             <td class="${textColor}">${is_positive}${record.earned_points || 0}</td>
             <td>${formattedDate}</td>
         `;
+        row.title = `备注信息：${record.remark || '无'}`
 
         if (count++ >= 30) return;
         recordsTableBody.appendChild(row);
@@ -456,8 +460,8 @@ async function calculateUserStats() {
         weekPointsSpan.textContent = weekPoints.toFixed(2);
 
         // 计算今日已完成任务数,日期格式为'yyyy-mm-dd 00:00:00+00',如‘2026-02-10 00:00:00+00’
-        const todayData = data.filter(record => 
-            new Date(record.checkin_date) >= todayStart && 
+        const todayData = data.filter(record =>
+            new Date(record.checkin_date) >= todayStart &&
             new Date(record.checkin_date) < todayEnd
         );
         const todayPoints = todayData.reduce((sum, record) => sum + (record.earned_points || 0), 0);
@@ -508,9 +512,9 @@ async function calculateUserStats() {
                     label: tag,
                     data: last15Days.map(day => day.points[tag] || 0),
                     borderColor: colorSet[tag] || '#000',
-                    backgroundColor: tag==='总和' ?  (colorSet[tag] || '#000') + '40' : '#25252510', // 添加透明度
+                    backgroundColor: tag === '总和' ? (colorSet[tag] || '#000') + '40' : '#25252510', // 添加透明度
                     tension: 0.2,
-                    fill: tag==='总和' ? true : false
+                    fill: tag === '总和' ? true : false
                 }))
             },
             options: {
@@ -631,3 +635,85 @@ async function testDatabaseConnection() {
         }, 3000);
     }
 }
+
+//AI模块：
+async function handleAISuggestion() {
+    // 获取用户输入
+    const userInput = document.getElementById("ai-prompt-input").value.trim();
+    if (!userInput) {
+        alert("请输入你想让AI帮忙的内容！");
+        return;
+    }
+
+    // TODO:根据前端选择时间范围和是否上传任务表
+    const scope = document.getElementById("data-range-select").value
+    const uploadTasks = document.getElementById("task-table-select").checked
+    const currentTasks = await getCurrentTasks(scope)
+    const wholeTasks = await getWholeTasks(uploadTasks)
+
+    // 生成优化后的提示词
+    const prompt = aiModule.generateTaskPrompt(userInput, currentTasks, wholeTasks);
+
+    // 调用DeepSeek API
+    const aiResponse = await aiModule.callDeepSeekAPI(prompt);
+
+    // 展示AI回答
+    const responseContainer = document.getElementById("ai-response-container");
+    responseContainer.innerHTML = `<div class="ai-answer">${aiResponse.replace(/\n/g, "<br>")}</div>`;
+}
+
+// 获取currentTasks:
+async function  getCurrentTasks(range = 'today') {
+    // 默认开始为今天
+    const dateStart = new Date()
+    dateStart.setHours(0, 0, 0, 0);
+    const dateEnd = new Date(dateStart);
+    dateEnd.setHours(23, 59, 59, 99)
+
+    if(range === 'week'){
+        // 开始为本周一
+        dateStart.setDate(dateStart.getDate() - dateStart.getDay() + 1)
+    }else if(range === 'yesterday'){
+        dateStart.setDate(dateStart.getDate() - 1)
+    }else if(range === 'month'){
+        // 开始为本月1号
+        dateStart.setDate(1)
+    }else if(range === 'all'){
+        dateStart.setFullYear(2000, 0, 1)
+    }else if(range === 'none'){
+        return []
+    }
+
+
+    const { data:data_records , error:error_records } = await mySupabase
+            .from('records')
+            .select('task_id, times, checkin_date, remark')
+            .gte('checkin_date', dateStart.toISOString()) // 大于等于今天开始
+            .lt('checkin_date', dateEnd.toISOString())
+    const { data:data_tasks, error:error_tasks } = await mySupabase
+        .from('tasks')
+        .select('*')
+
+    // 根据今日计算完成情况，生成currentTasks内容：
+    return data_records.map(r => {
+        const task = data_tasks.find(t => t.id === r.task_id);
+        return {
+            title: task?.task_name || '未知任务',
+            times: r.times || 0,
+            date: r.checkin_date,
+            remark : r.remark,
+        };
+    })
+}
+
+// 获取任务表
+async function getWholeTasks(param = 'true') {
+    if(param !== 'true') return []
+    const { data:data_tasks, error:error_tasks } = await mySupabase
+        .from('tasks')
+        .select('*')
+    return data_tasks
+}
+
+// 把函数挂载到window，供HTML调用
+window.handleAISuggestion = handleAISuggestion;

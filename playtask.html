@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +13,7 @@
     <!-- 引入chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -35,6 +37,31 @@
         </header>
 
         <main>
+            <div class="ai-section">
+                <h3>🤖 AI 智能助手(🚀Deepseek)</h3>
+                <!-- 加载状态提示 -->
+                <div id="ai-loading" style="display: none; color: #666;">AI正在思考中...</div>
+
+                <div class="ai-input-container">
+                    <input type="text" id="ai-prompt-input" placeholder="比如：帮我生成3个健身习惯任务、分析我的任务完成情况">
+                    <select id="data-range-select" class="ai-select">
+                        <option value="today">今日数据</option>
+                        <option value="yesterday">昨日数据</option>
+                        <option value="week">本周数据</option>
+                        <option value="month">本月数据</option>
+                        <option value="all">全部数据</option>
+                        <option value="none">不上传数据</option>
+                    </select>
+                     <select id="task-table-select" class="ai-select">
+                        <option value="true">上传任务表</option>
+                        <option value="false">不上传任务表</option>
+                    </select>
+                    <button id="ai-suggest-btn" onclick="handleAISuggestion()">获取AI建议</button>
+                </div>
+
+                <!-- AI回答展示区域 -->
+                <div id="ai-response-container" class="ai-response"></div>
+            </div>
             <section class="tasks-section">
                 <h2><i class="fas fa-list-check"></i> 今日任务</h2>
                 <div id="tasksContainer" class="tasks-grid">
@@ -109,6 +136,8 @@
     <!-- 加载Supabase客户端库和本地JS文件 -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="supabase.js"></script>
+    <script src="ai.js"></script>
     <script src="app.js"></script>
 </body>
+
 </html>
