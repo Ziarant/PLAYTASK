@@ -382,3 +382,91 @@ footer {
         width: 100%;
     }
 }
+
+/* Markdown渲染样式 */
+.markdown-content {
+  line-height: 1.8;
+  font-size: 14px;
+}
+
+/* 标题样式 */
+.markdown-content h1 {
+  font-size: 1.5rem;
+  margin: 1rem 0;
+  color: #007bff;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+}
+
+.markdown-content h2 {
+  font-size: 1.3rem;
+  margin: 0.8rem 0;
+  color: #333;
+}
+
+.markdown-content h3 {
+  font-size: 1.1rem;
+  margin: 0.6rem 0;
+  color: #555;
+}
+
+/* 列表样式 */
+.markdown-content ul, .markdown-content ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.markdown-content li {
+  margin: 0.3rem 0;
+}
+
+/* 加粗/斜体 */
+.markdown-content strong {
+  color: #007bff;
+  font-weight: 600;
+}
+
+.markdown-content em {
+  color: #666;
+  font-style: italic;
+}
+
+/* 代码块样式 */
+.markdown-content pre {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0.8rem 0;
+}
+
+.markdown-content code {
+  background-color: #f1f3f5;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.markdown-content pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+/* 链接样式 */
+.markdown-content a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.markdown-content a:hover {
+  text-decoration: underline;
+}
+
+/* 引用样式 */
+.markdown-content blockquote {
+  border-left: 4px solid #007bff;
+  padding: 0.5rem 1rem;
+  background-color: #f8f9fa;
+  margin: 0.8rem 0;
+  color: #666;
+}

@@ -122,7 +122,7 @@ function renderTasks(date = new Date()) {
                 </div>
             </div>
             <div>
-                <input class="task-remark p-2 w-full border border-gray-400 rounded-lg" type="text" placeholder="记录当下的感受吧">
+                <input class="task-remark p-2 w-full border border-gray-400 rounded-lg" type="text" placeholder="记录下感受吧">
             </div>
             <div class="task-actions">
                 <input type="number" class="task-times-input" min="-10000" max="10000" value="1" data-task-times="${task.id}">
@@ -390,10 +390,12 @@ function renderRecords(records) {
             <td>${completedDate || 'N/A'}</td>
             <td>${record.times || 1}</td>
             <td>${record.buff_value || 1}</td>
-            <td class="${textColor}">${is_positive}${record.earned_points || 0}</td>
+            <td class="${textColor}">${is_positive}${record.earned_points.toFixed(2) || 0}</td>
             <td>${formattedDate}</td>
         `;
-        row.title = `备注信息：${record.remark || '无'}`
+        row.title = `
+        备注信息：${record.remark || '无'}
+        `
 
         if (count++ >= 30) return;
         recordsTableBody.appendChild(row);
@@ -659,7 +661,9 @@ async function handleAISuggestion() {
 
     // 展示AI回答
     const responseContainer = document.getElementById("ai-response-container");
-    responseContainer.innerHTML = `<div class="ai-answer">${aiResponse.replace(/\n/g, "<br>")}</div>`;
+    const markdownHtml = marked.parse(aiResponse);
+    // 渲染解析后的HTML（替换原有文本）
+    responseContainer.innerHTML = `<div class="ai-answer markdown-content">${markdownHtml}</div>`;
 }
 
 // 获取currentTasks:
@@ -714,6 +718,15 @@ async function getWholeTasks(param = 'true') {
         .select('*')
     return data_tasks
 }
+
+// 快捷键监听
+document.addEventListener('keydown', (e) => {
+  const input = document.getElementById('ai-prompt-input');
+  // Enter提交AI输入（未聚焦其他输入框时）
+  if (e.key === 'Enter' && document.activeElement === input) {
+    handleAISuggestion();
+  }
+});
 
 // 把函数挂载到window，供HTML调用
 window.handleAISuggestion = handleAISuggestion;

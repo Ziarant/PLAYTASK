@@ -7,6 +7,20 @@
 const DEEPSEEK_API_KEY = "sk-f47f3a78f7b74203bdfc669965194ac3";
 const DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions";
 
+// 配置marked.js：解析Markdown并开启XSS安全防护
+marked.setOptions({
+  breaks: true, // 自动将换行符\n转换成<br>
+  gfm: true, // 支持GitHub风格的Markdown
+  sanitize: true, // 开启XSS过滤（关键：防止恶意代码）
+  // 可选：代码块高亮（如果AI返回代码）
+  highlight: function (code, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      return hljs.highlight(code, { language: lang }).value;
+    }
+    return hljs.highlightAuto(code).value;
+  }
+});
+
 /**
  * 调用DeepSeek API获取AI响应
  * @param {string} prompt - 发给AI的提示词
@@ -32,7 +46,7 @@ async function callDeepSeekAPI(prompt) {
           }
         ],
         temperature: 0.7, // 控制回答的随机性
-        max_tokens: 1000 // 最大返回字符数
+        max_tokens: 2000 // 最大返回字符数
       })
     });
 
@@ -66,10 +80,11 @@ function generateTaskPrompt(userInput, currentTasks = [], wholeTasks = []) {
   const basePrompt = `
     你是一个专业的个人任务管理和习惯养成助手，需要根据用户需求提供简洁、实用的建议。
     要求：
-    1. 回答控制在300字以内，语言简洁易懂；
+    1. 回答控制在500字以内，语言简洁易懂；
     2. 贴合个人习惯养成和任务管理场景；
     3. 给出具体、可执行的建议，而非空泛的理论；
-    4. 语气友好、鼓励，符合激励用户的目标。
+    4. 语气客观理性，勇于指出问题；
+    5. 保持友好、鼓励，符合激励用户的目标，如有必要，给出下一阶段行动建议。
 
     今日日期：${new Date().toLocaleDateString('zh-CN')}
     
