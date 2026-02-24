@@ -497,6 +497,7 @@ async function calculateUserStats() {
             ...day,
             points: resolvedPoints[index]
         }))
+        // 检查chartCtx是否已初始化，如果未初始化则创建新的Chart实例，否则更新现有实例的数据
         // 将15日积分情况绘制在画布上：
         if (chartCtx) {
             chartCtx.destroy(); // 销毁旧图表
@@ -510,6 +511,7 @@ async function calculateUserStats() {
                 if (!tagkeys.includes(tag)) tagkeys.push(tag)
             })
         })
+        // 创建新的Chart实例
         const chart = new Chart(chartCtx, {
             type: 'line',
             data: {
