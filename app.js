@@ -105,6 +105,8 @@ function renderTasks(date = new Date()) {
     const todayFormatted = `${year}-${month}-${day}`;
 
     tasksContainer.innerHTML = '';
+    consumptionContainer.innerHTML = '';
+    tasksCompletedContainer.innerHTML = '';
     tasks.forEach(task => {
         const taskCard = document.createElement('div');
         taskCard.className = 'task-list';
@@ -122,7 +124,7 @@ function renderTasks(date = new Date()) {
                 </div>
             </div>
             <div>
-                <input class="task-remark p-2 w-full border border-gray-400 rounded-lg" type="text" placeholder="记录下感受吧">
+                <input id="remark-${task.id}" class="task-remark p-2 w-full border border-gray-400 rounded-lg" type="text" placeholder="记录下感受吧">
             </div>
             <div class="task-actions">
                 <input type="number" class="task-times-input" min="-10000" max="10000" value="1" data-task-times="${task.id}">
@@ -241,6 +243,7 @@ async function handleCheckIn(event) {
 
     // 计算获取积分：task.base_points * timestimes
     const earned = await calculatePoints(task, times, date)
+    const remark = document.getElementById(`remark-${taskId}`).value
 
     try {
         const { data, error } = await mySupabase
@@ -251,7 +254,8 @@ async function handleCheckIn(event) {
                     times: times,
                     earned_points: earned.points || 1,
                     buff_value: earned.buff_value || 1,
-                    checkin_date: date || new Date().toLocaleDateString().split('T')[0] // 默认今天日期
+                    checkin_date: date || new Date().toLocaleDateString().split('T')[0], // 默认今天日期
+                    remark: remark || null
                 }
             ]);
 

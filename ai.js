@@ -80,11 +80,13 @@ function generateTaskPrompt(userInput, currentTasks = [], wholeTasks = []) {
   const basePrompt = `
     你是一个专业的个人任务管理和习惯养成助手，需要根据用户需求提供简洁、实用的建议。
     要求：
-    1. 回答控制在500字以内，语言简洁易懂；
+    1. 回答尽量控制在300字以内，不要超过500字，语言简洁易懂；
     2. 贴合个人习惯养成和任务管理场景；
     3. 给出具体、可执行的建议，而非空泛的理论；
     4. 语气客观理性，勇于指出问题；
     5. 保持友好、鼓励，符合激励用户的目标，如有必要，给出下一阶段行动建议。
+
+    用户数据：出生日期1996-02-16，男性，身高178cm；
 
     今日日期：${new Date().toLocaleDateString('zh-CN')}
     
@@ -109,7 +111,6 @@ function generateTaskPrompt(userInput, currentTasks = [], wholeTasks = []) {
 
     用户当前需求：${userInput}
   `;
-  console.log("生成的提示词:", basePrompt.trim())
   return basePrompt.trim();
 }
 
