@@ -7,7 +7,7 @@ const colorSet = {
     '健康': '#f59e0b',
     '娱乐': '#8b5cf6',
     '经济': '#4b6cb7',
-    '总和': '#252555'
+    '总和': '#252555',
 }
 
 // 全局变量存储图表实例
@@ -159,7 +159,8 @@ function renderTasks(date = new Date()) {
 
         // 先按照是否属于消费，进行卡片摆放：
         if (task.is_consume) {
-            // 消费项目
+            // 消费项目（ID999不显示）
+            if (task.id === 999) return;
             taskCard.style.borderLeftColor = '#d11a1aff'
             consumptionContainer.appendChild(taskCard)
         } else {
@@ -408,8 +409,8 @@ function renderRecords(records) {
     totalRecordsSpan.textContent = records.length;
 }
 
-// 获取特定日期的积分,返回{type : earned_points}
-async function getDatabyDate(date) {
+// 获取特定日期的积分,返回{type : earned_points}, 默认排除tag为'兑换'的兑换记录
+async function getDatabyDate(date, includeExchange = false) {
     // date: str, 'yyyy-mm-dd'
     const selectDateStart = new Date(date)
     selectDateStart.setHours(0, 0, 0, 0)
@@ -424,12 +425,15 @@ async function getDatabyDate(date) {
     // 按照task分类tag归纳积分数据：
     if (error) throw error;
     const Points = data.reduce((acc, record) => {
-        const task = tasks.find(t => t.id === record.task_id);
+        const task = tasks.find(t => t.id === record.task_id );
         const tag = task ? task.tags : '未知';
-        acc[tag] = (acc[tag] || 0) + (record.earned_points || 0);
+        if(!includeExchange && tag != '兑换') {
+            acc[tag] = (acc[tag] || 0) + (record.earned_points || 0);
+        }
         return acc;
     }, {})
-    Points['总和'] = data.reduce((sum, record) => sum + (record.earned_points || 0), 0)
+    // 计算总和
+    Points['总和'] = Object.values(Points).reduce((sum, value) => sum + value, 0);
     return Points
 }
 
@@ -451,18 +455,25 @@ async function calculateUserStats() {
         // 计算总积分
         const { data, error } = await mySupabase
             .from('records')
-            .select('earned_points, checkin_date');
+            .select('earned_points, checkin_date, task_id');
 
         if (error) throw error;
 
         // 计算总积分
         const totalPoints = data.reduce((sum, record) => sum + (record.earned_points || 0), 0);
         totalPointsSpan.textContent = totalPoints.toFixed(2);
-
-        // 计算本周积分
+        
+        // 计算本周积分（不包含'兑换'）
         const weekPoints = data
             .filter(record => new Date(record.checkin_date) >= startOfWeek)
-            .reduce((sum, record) => sum + (record.earned_points || 0), 0);
+            .reduce((sum, record) => {
+                const task = tasks.find(t => t.id === record.task_id);
+                if (task && task.tags === '兑换') {
+                    return sum; // 跳过兑换记录
+                }
+                sum += (record.earned_points || 0);
+                return sum;
+            }, 0);
         weekPointsSpan.textContent = weekPoints.toFixed(2);
 
         // 计算今日已完成任务数,日期格式为'yyyy-mm-dd 00:00:00+00',如‘2026-02-10 00:00:00+00’
@@ -470,9 +481,30 @@ async function calculateUserStats() {
             new Date(record.checkin_date) >= todayStart &&
             new Date(record.checkin_date) < todayEnd
         );
-        const todayPoints = todayData.reduce((sum, record) => sum + (record.earned_points || 0), 0);
+        // 计算本日积分（不包含'兑换'）
+        // const todayPoints = todayData.reduce((sum, record) => sum + (record.earned_points || 0), 0);
+        const todayPoints = todayData.reduce((sum, record) => {
+            const task = tasks.find(t => t.id === record.task_id);
+            if (task && task.tags === '兑换') {
+                return sum; // 跳过兑换记录
+            }
+            sum += (record.earned_points || 0);
+            return sum;
+        }, 0);
         todayPointsSpan.textContent = todayPoints.toFixed(2);
         todayCompletedSpan.textContent = todayData.length;
+
+        // 计算经验值：task_id = 999的记录中earned_points的总和
+        const expPoints = data
+            .filter(record => record.task_id === 999)
+            .reduce((sum, record) => sum - (record.earned_points || 0), 0);
+        // 计算等级：
+        document.getElementById('convertedPoints').textContent = expPoints.toFixed(2);
+        const { level, expPercent, expProgress, expForNextLevel } = calculateLevelAndExp(expPoints);
+        document.getElementById('user-level').textContent = `Lv.${level}`;
+        document.getElementById('exp-percent').textContent = `${expPercent}%`;
+        document.getElementById('exp-progress-bar').style.width = `${expPercent}%`;
+        document.getElementById('exp-value-text').textContent = `${expProgress}/${expForNextLevel}`;
 
     } catch (error) {
         console.error('计算统计信息失败:', error);

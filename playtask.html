@@ -31,9 +31,34 @@
                 <div class="user-info">
                     <div class="score-display">
                         <span>总积分: <strong id="totalPoints">0</strong></span>
-                        <span>本日积分: <strong id="todayPoints">0</strong></span>
-                        <span>本周积分: <strong id="weekPoints">0</strong></span>
+                        <span>本日积分（不含兑换）: <strong id="todayPoints">0</strong></span>
+                        <span>本周积分（不含兑换）: <strong id="weekPoints">0</strong></span>
                     </div>
+                </div>
+            </div>
+            <div class="level-experience-container" id="levelExperienceContainer">
+                <div class="level-info">
+                    <span class="level-label">当前等级：</span>
+                    <span id="user-level" class="level-value">Lv.1</span>
+                    <span class="exp-label">经验进度：</span>
+                    <span id="exp-percent" class="exp-value">25%</span>
+                </div>
+                <div class="exp-bar-wrapper">
+                    <div class="exp-bar-container">
+                        <div id="exp-progress-bar" class="exp-progress-bar" style="width: 25%;"></div>
+                    </div>
+                    <span id="exp-value-text" class="exp-value-text">0/50</span>
+                </div>
+                <!-- 经验转化按钮： -->
+                <div>
+                    <input type="number" id="pointsToConvert" class="points-input" value="50" min="50" step="50">
+                    <button id="convertExpBtn" class="convert-exp-btn">积分转经验</button>
+                    <span class="level-label">已转化积分：</span>
+                    <span id="convertedPoints" class="converted-points">0</span>
+                </div>
+                <!-- 显示当前Buff效果 -->
+                <div id="buff-container" class="buff-container">
+                    <!-- Buff图标将由JavaScript动态生成 -->
                 </div>
             </div>
         </header>
@@ -54,7 +79,7 @@
                         <option value="all">全部数据</option>
                         <option value="none">不上传数据</option>
                     </select>
-                     <select id="task-table-select" class="ai-select">
+                    <select id="task-table-select" class="ai-select">
                         <option value="true">上传任务表</option>
                         <option value="false">不上传任务表</option>
                     </select>
@@ -137,9 +162,10 @@
 
     <!-- 加载Supabase客户端库和本地JS文件 -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="supabase.js"></script>
-    <script src="ai.js"></script>
-    <script src="app.js"></script>
+    <script src="script/supabase.js"></script>
+    <script src="script/ai.js"></script>
+    <script src="script/personal.js"></script>
+    <script src="script/app.js"></script>
 </body>
 
 </html>

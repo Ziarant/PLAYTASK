@@ -91,6 +91,116 @@ main {
     padding: 30px;
 }
 
+/* 等级经验容器整体样式 */
+.level-experience-container {
+    background: #f8f9fa96;
+    border-radius: 8px;
+    padding: 12px 15px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    border: 1px solid #e9ecef;
+}
+
+/* 等级信息行 */
+.level-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.level-label, .exp-label {
+    color: #666;
+    margin-left: 20px;
+}
+
+.level-value {
+    color: #ff0000;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.exp-value {
+    color: #4053ff;
+}
+
+/* 经验条样式 */
+.exp-bar-wrapper {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.exp-bar-container {
+    flex: 1;
+    /* width: 100%; */
+    height: 8px;
+    background: #e5e6eb;
+    border-radius: 4px;
+    overflow: hidden;
+    /* margin-bottom: 8px; */
+}
+
+.exp-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4053ff, #36cfc9);
+    border-radius: 4px;
+    transition: width 0.3s ease; /* 进度变化时的过渡动画 */
+}
+
+.exp-value-text {
+    font-size: 12px;
+    color: #666;
+    min-width: 80px; /* 固定宽度，避免数值变化导致布局抖动 */
+    text-align: right;
+}
+
+/* 保级提示样式 */
+.maintenance-tip {
+    font-size: 12px;
+    color: #888;
+}
+
+.maintenance-value {
+    color: #f56c6c; /* 红色突出保级需求 */
+    font-weight: 500;
+}
+
+.earned-value {
+    color: #67c23a; /* 绿色展示已赚取 */
+}
+
+.converted-points {
+    color: #10b981;
+    font-weight: 500;
+    margin-left: 5px;
+}
+
+.points-input {
+    width: 70px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #333;
+    margin-right: 20px;
+}
+
+.convert-exp-btn {
+    background-color: #10b981;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
 /* ai */
 /* AI功能区域样式 */
 .ai-section {
