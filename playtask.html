@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 
+<!-- 上吧，给这个无意义的世界一记耳光！ -->
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -36,7 +38,7 @@
                     </div>
                 </div>
             </div>
-            <div class="level-experience-container" id="levelExperienceContainer">
+            <div class="level-experience-container" id="levelExperienceContainer" title="初始2个Buff，每10级新增一个Buff，最多5个;Buff效果随等级成长">
                 <div class="level-info">
                     <span class="level-label">当前等级：</span>
                     <span id="user-level" class="level-value">Lv.1</span>
@@ -113,7 +115,9 @@
 
             <!-- 已完成的任务：tasksCompletedContainer -->
             <section class="tasks-section">
-                <h2><i class="fas fa-list-check"></i>已完成任务</h2>
+                <div class="flex justify-between items-center mb-4">
+                    <h2><i class="fas fa-list-check"></i>已完成任务</h2>
+                </div>  
                 <div id="tasksCompletedContainer" class="tasks-grid">
                     <!-- 任务卡片将由JavaScript动态生成 -->
                 </div>
@@ -121,7 +125,14 @@
 
             <div class="content-row">
                 <section class="records-section">
-                    <h2><i class="fas fa-history"></i> 我的记录</h2>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2><i class="fas fa-history"></i> 我的记录</h2>
+                        <div>
+                            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+                            <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+                            <input type="text" id="daterange" class="border border-gray-300" placeholder="选择起止日期...">
+                        </div>
+                    </div>
                     <div class="table-container">
                         <table id="recordsTable">
                             <thead>
@@ -166,6 +177,21 @@
     <script src="script/ai.js"></script>
     <script src="script/personal.js"></script>
     <script src="script/app.js"></script>
+
+    <script>
+    // 日期选择器，用于筛选记录完成日期并更新显示在表格中
+    flatpickr("#daterange", {
+        mode: "range",        // 范围模式
+        dateFormat: "Y-m-d",
+        onChange: function(selectedDates, dateStr) {
+            // 格式如 "2025-03-01 to 2025-03-07"，则分割字符串获取开始和结束日期，并调用函数更新表格显示
+            const [startDate, endDate] = dateStr.split(" to ");
+            if (startDate && endDate) {
+                loadUserRecords(startDate, endDate);
+            }
+        }
+    });
+    </script>
 </body>
 
 </html>

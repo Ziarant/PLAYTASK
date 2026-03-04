@@ -334,7 +334,7 @@ async function calculatePoints(task, times, date) {
 }
 
 // 加载用户打卡记录
-async function loadUserRecords() {
+async function loadUserRecords(startDate = null, endDate = null) {
 
     try {
         // 打卡记录表名为 'records'
@@ -350,7 +350,20 @@ async function loadUserRecords() {
 
         if (error) throw error;
 
-        renderRecords(data || []);
+        // 过滤日期范围内的记录
+        if (startDate && endDate) {
+            console.log(startDate, endDate)
+            filterData = data.filter(record => {
+                const recordDate = new Date(record.checkin_date);
+                if(recordDate >= new Date(startDate) && recordDate <= new Date(endDate)) {
+                    return true;
+                }
+            });
+        } else {
+            filterData = data;
+        }
+
+        renderRecords(filterData || []);
     } catch (error) {
         console.error('加载记录记录失败:', error);
         recordsTableBody.innerHTML = `<tr><td colspan="3" class="error-message">加载记录失败: ${error.message}</td></tr>`;
@@ -623,11 +636,13 @@ async function updateTodayCheckinCounts(date = new Date()) {
 // 刷新所有数据
 async function refreshAllData() {
     refreshDataBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 刷新中...';
+    const dateStr = document.getElementById("datarange").value
+    const [startDate, endDate] = dateStr.split(" to ");
 
     try {
         await Promise.all([
             loadTasks(),
-            loadUserRecords(),
+            loadUserRecords(startDate, endDate),
             calculateUserStats()
         ]);
 
