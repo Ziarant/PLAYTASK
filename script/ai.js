@@ -38,7 +38,7 @@ async function callDeepSeekAPI(prompt) {
         "Authorization": `Bearer ${DEEPSEEK_API_KEY}`
       },
       body: JSON.stringify({
-        model: "deepseek-chat", // 使用deepseek-chat模型，可根据需要替换
+        model: "deepseek-v4-flash", // 使用deepseek-chat模型，可根据需要替换
         messages: [
           {
             role: "user",
